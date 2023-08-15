@@ -1,10 +1,11 @@
 package couchdb_test
 
 import (
+	"context"
 	"net/http"
 	"testing"
 
-	"github.com/fjl/go-couchdb"
+	couchdb "github.com/travishegner/go-couchdb"
 )
 
 func TestBasicAuth(t *testing.T) {
@@ -18,7 +19,7 @@ func TestBasicAuth(t *testing.T) {
 	for _, test := range tests {
 		req, _ := http.NewRequest("GET", "http://localhost/", nil)
 		auth := couchdb.BasicAuth(test.username, test.password)
-		auth.AddAuth(req)
+		auth.AddAuth(context.Background(), req, nil)
 
 		expected := http.Header{"Authorization": {test.header}}
 		check(t, "req headers", expected, req.Header)
@@ -28,7 +29,7 @@ func TestBasicAuth(t *testing.T) {
 func TestProxyAuthWithoutToken(t *testing.T) {
 	req, _ := http.NewRequest("GET", "http://localhost/", nil)
 	auth := couchdb.ProxyAuth("user", []string{"role1", "role2"}, "")
-	auth.AddAuth(req)
+	auth.AddAuth(context.Background(), req, nil)
 
 	expected := http.Header{
 		"X-Auth-Couchdb-Username": {"user"},
@@ -40,7 +41,7 @@ func TestProxyAuthWithoutToken(t *testing.T) {
 func TestProxyAuthWithToken(t *testing.T) {
 	req, _ := http.NewRequest("GET", "http://localhost/", nil)
 	auth := couchdb.ProxyAuth("user", []string{"role1", "role2"}, "secret")
-	auth.AddAuth(req)
+	auth.AddAuth(context.Background(), req, nil)
 
 	expected := http.Header{
 		"X-Auth-Couchdb-Username": {"user"},

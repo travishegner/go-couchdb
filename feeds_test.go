@@ -1,12 +1,13 @@
 package couchdb_test
 
 import (
+	"context"
 	"encoding/json"
 	"io"
 	. "net/http"
 	"testing"
 
-	"github.com/fjl/go-couchdb"
+	couchdb "github.com/travishegner/go-couchdb"
 )
 
 func TestDBUpdatesFeed(t *testing.T) {
@@ -25,7 +26,7 @@ func TestDBUpdatesFeed(t *testing.T) {
 		}`+"\n")
 	})
 
-	feed, err := c.DBUpdates(nil)
+	feed, err := c.DBUpdates(context.Background(), nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -69,7 +70,7 @@ func TestChangesFeedPoll_UnexpectedKeys(t *testing.T) {
 			"last_seq": "99-...", "foobar": {"x": [1, "y"]}, "pending": 1
 		}`)
 	})
-	feed, err := c.DB("db").Changes(nil)
+	feed, err := c.DB("db").Changes(context.Background(), nil)
 	if err != nil {
 		t.Fatalf("client.Changes error: %v", err)
 	}
@@ -99,7 +100,7 @@ func TestChangesFeedPoll_Doc(t *testing.T) {
 		}`)
 	})
 	opt := couchdb.Options{"include_docs": true}
-	feed, err := c.DB("db").Changes(opt)
+	feed, err := c.DB("db").Changes(context.Background(), opt)
 	if err != nil {
 		t.Fatalf("client.Changes error: %v", err)
 	}
@@ -147,7 +148,7 @@ func TestChangesFeedPoll_SeqInteger(t *testing.T) {
 		}`)
 	})
 
-	feed, err := c.DB("db").Changes(nil)
+	feed, err := c.DB("db").Changes(context.Background(), nil)
 	if err != nil {
 		t.Fatalf("client.Changes error: %v", err)
 	}
@@ -200,7 +201,7 @@ func TestChangesFeedPoll_SeqString(t *testing.T) {
 		}`)
 	})
 
-	feed, err := c.DB("db").Changes(nil)
+	feed, err := c.DB("db").Changes(context.Background(), nil)
 	if err != nil {
 		t.Fatalf("client.Changes error: %v", err)
 	}
@@ -252,7 +253,7 @@ func TestChangesFeedCont_SeqInteger(t *testing.T) {
 		}`+"\n")
 	})
 
-	feed, err := c.DB("db").Changes(couchdb.Options{"feed": "continuous"})
+	feed, err := c.DB("db").Changes(context.Background(), couchdb.Options{"feed": "continuous"})
 	if err != nil {
 		t.Fatalf("client.Changes error: %v", err)
 	}
@@ -301,7 +302,7 @@ func TestChangesFeedCont_Doc(t *testing.T) {
 	})
 
 	opt := couchdb.Options{"include_docs": true, "feed": "continuous"}
-	feed, err := c.DB("db").Changes(opt)
+	feed, err := c.DB("db").Changes(context.Background(), opt)
 	if err != nil {
 		t.Fatalf("client.Changes error: %v", err)
 	}
@@ -348,7 +349,7 @@ func TestChangesFeedCont_SeqString(t *testing.T) {
 		}`+"\n")
 	})
 
-	feed, err := c.DB("db").Changes(couchdb.Options{"feed": "continuous"})
+	feed, err := c.DB("db").Changes(context.Background(), couchdb.Options{"feed": "continuous"})
 	if err != nil {
 		t.Fatalf("client.Changes error: %v", err)
 	}

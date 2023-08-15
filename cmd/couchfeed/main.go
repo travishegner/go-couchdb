@@ -3,11 +3,12 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"os"
 
-	"github.com/fjl/go-couchdb"
+	couchdb "github.com/travishegner/go-couchdb"
 )
 
 func main() {
@@ -34,13 +35,13 @@ func main() {
 	var f feed
 	var show func()
 	if *dbupdates {
-		f, err = client.DBUpdates(opt)
+		f, err = client.DBUpdates(context.Background(), opt)
 		show = func() {
 			chf := f.(*couchdb.DBUpdatesFeed)
 			fmt.Println(chf.Event, "db", chf.DB, "seq", chf.Seq)
 		}
 	} else {
-		f, err = client.DB(*dbname).Changes(opt)
+		f, err = client.DB(*dbname).Changes(context.Background(), opt)
 		show = func() {
 			chf := f.(*couchdb.ChangesFeed)
 			if chf.Deleted {

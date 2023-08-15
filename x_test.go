@@ -9,7 +9,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/fjl/go-couchdb"
+	couchdb "github.com/travishegner/go-couchdb"
 )
 
 // testClient is a very special couchdb.Client that also implements

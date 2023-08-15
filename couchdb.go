@@ -17,7 +17,7 @@ import (
 )
 
 // Client represents a remote CouchDB server.
-type Client struct{ *transport }
+type Client struct{ *Transport }
 
 // NewClient creates a new client object.
 //
@@ -60,7 +60,7 @@ func (c *Client) Ping(ctx context.Context) error {
 // In order to verify the credentials against the server, issue any request
 // after the call the SetAuth.
 func (c *Client) SetAuth(a Auth) {
-	c.transport.setAuth(a)
+	c.Transport.setAuth(a)
 }
 
 // CreateDB creates a new database.
@@ -120,7 +120,7 @@ func (c *Client) AllDBs(ctx context.Context) (names []string, err error) {
 
 // DB represents a remote CouchDB database.
 type DB struct {
-	*transport
+	*Transport
 	name string
 }
 
@@ -128,7 +128,7 @@ type DB struct {
 // The database inherits the authentication and http.RoundTripper
 // of the client. The database's actual existence is not verified.
 func (c *Client) DB(name string) *DB {
-	return &DB{c.transport, name}
+	return &DB{c.Transport, name}
 }
 
 func (db *DB) path() *pathBuilder {
@@ -149,7 +149,7 @@ var getJsonKeys = []string{"open_revs", "atts_since"}
 // for more information.
 //
 // http://docs.couchdb.org/en/latest/api/document/common.html?highlight=doc#get--db-docid
-func (db *DB) Get(ctx context.Context, id string, doc *map[string]any, opts Options) error {
+func (db *DB) Get(ctx context.Context, id string, doc any, opts Options) error {
 	path, err := db.path().docID(id).options(opts, getJsonKeys)
 	if err != nil {
 		return err

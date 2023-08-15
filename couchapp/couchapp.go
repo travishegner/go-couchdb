@@ -9,6 +9,7 @@ package couchapp
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -17,7 +18,7 @@ import (
 	"path"
 	"strings"
 
-	"github.com/fjl/go-couchdb"
+	couchdb "github.com/travishegner/go-couchdb"
 )
 
 // DefaultIgnorePatterns contains the default list of glob patterns
@@ -52,26 +53,26 @@ func LoadFile(file string) (Doc, error) {
 //
 // Example tree:
 //
-//     <root>/
-//       a.txt           // contains `text-a`
-//       b.json          // contains `{"key": 1}`
-//       c/
-//         d.xyz/
-//         e/
-//           f           // contains `text-f`
+//	<root>/
+//	  a.txt           // contains `text-a`
+//	  b.json          // contains `{"key": 1}`
+//	  c/
+//	    d.xyz/
+//	    e/
+//	      f           // contains `text-f`
 //
 // This would be compiled into the following JSON object:
 //
-//     {
-//       "a": "text-a",
-//       "b": {"key": 1},
-//       "c": {
-//         "d.xyz": {},
-//         "e": {
-//           "f": "text-f"
-//         }
-//       }
-//     }
+//	{
+//	  "a": "text-a",
+//	  "b": {"key": 1},
+//	  "c": {
+//	    "d.xyz": {},
+//	    "e": {
+//	      "f": "text-f"
+//	    }
+//	  }
+//	}
 //
 // The second argument is a slice of glob patterns for ignored files.
 // If nil is given, the default patterns are used. The patterns are
@@ -171,10 +172,10 @@ func stripExtension(filename string) string {
 // If the document exists, it will be overwritten.
 // The new revision of the document is returned.
 func Store(db *couchdb.DB, docid string, doc Doc) (string, error) {
-	if rev, err := db.Rev(docid); err == nil {
-		return db.Put(docid, doc, rev)
+	if rev, err := db.Rev(context.Background(), docid); err == nil {
+		return db.Put(context.Background(), docid, doc, rev)
 	} else if couchdb.NotFound(err) {
-		return db.Put(docid, doc, "")
+		return db.Put(context.Background(), docid, doc, "")
 	} else {
 		return "", err
 	}

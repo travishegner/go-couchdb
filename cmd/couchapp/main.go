@@ -7,8 +7,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/fjl/go-couchdb"
-	"github.com/fjl/go-couchdb/couchapp"
+	couchdb "github.com/travishegner/go-couchdb"
+	"github.com/travishegner/go-couchdb/couchapp"
 )
 
 func main() {

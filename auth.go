@@ -21,7 +21,7 @@ import (
 type Auth interface {
 	// AddAuth should add authentication information (e.g. headers)
 	// to the given HTTP request.
-	AddAuth(context.Context, *http.Request, *transport)
+	AddAuth(context.Context, *http.Request, *Transport)
 
 	// UpdateAuth should do any maintenance required to the credentials
 	// based on the response from the server.
@@ -37,7 +37,7 @@ func BasicAuth(username, password string) Auth {
 	return basicauth(hdr)
 }
 
-func (a basicauth) AddAuth(ctx context.Context, req *http.Request, t *transport) {
+func (a basicauth) AddAuth(ctx context.Context, req *http.Request, t *Transport) {
 	req.Header.Set("Authorization", string(a))
 }
 
@@ -60,7 +60,7 @@ func CookieAuth(username, password string) Auth {
 	}
 }
 
-func (a *cookieauth) AddAuth(ctx context.Context, req *http.Request, t *transport) {
+func (a *cookieauth) AddAuth(ctx context.Context, req *http.Request, t *Transport) {
 	if a.cookie == nil || time.Now().Add(5*time.Second).After(a.cookie.Expires) {
 		body, err := json.Marshal(a)
 		if err != nil {
@@ -123,7 +123,7 @@ func ProxyAuth(username string, roles []string, secret string) Auth {
 	return pa
 }
 
-func (a proxyauth) AddAuth(ctx context.Context, req *http.Request, t *transport) {
+func (a proxyauth) AddAuth(ctx context.Context, req *http.Request, t *Transport) {
 	req.Header.Set("X-Auth-CouchDB-UserName", a.username)
 	req.Header.Set("X-Auth-CouchDB-Roles", a.roles)
 	if a.tok != "" {

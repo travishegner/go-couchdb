@@ -1,6 +1,7 @@
 package couchdb_test
 
 import (
+	"context"
 	"errors"
 	"io"
 	. "net/http"
@@ -9,7 +10,7 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/fjl/go-couchdb"
+	couchdb "github.com/travishegner/go-couchdb"
 )
 
 type roundTripperFunc func(*Request) (*Response, error)
@@ -66,7 +67,7 @@ func TestNewClient(t *testing.T) {
 		if test.SetAuth != nil {
 			c.SetAuth(test.SetAuth)
 		}
-		c.Ping() // trigger round trip
+		c.Ping(context.Background()) // trigger round trip
 	}
 }
 
@@ -79,7 +80,7 @@ func TestPing(t *testing.T) {
 	c := newTestClient(t)
 	c.Handle("HEAD /", func(resp ResponseWriter, req *Request) {})
 
-	if err := c.Ping(); err != nil {
+	if err := c.Ping(context.Background()); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -88,7 +89,7 @@ func TestCreateDB(t *testing.T) {
 	c := newTestClient(t)
 	c.Handle("PUT /db", func(resp ResponseWriter, req *Request) {})
 
-	db, err := c.CreateDB("db")
+	db, err := c.CreateDB(context.Background(), "db")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -99,7 +100,7 @@ func TestCreateDB(t *testing.T) {
 func TestDeleteDB(t *testing.T) {
 	c := newTestClient(t)
 	c.Handle("DELETE /db", func(resp ResponseWriter, req *Request) {})
-	if err := c.DeleteDB("db"); err != nil {
+	if err := c.DeleteDB(context.Background(), "db"); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -110,7 +111,7 @@ func TestAllDBs(t *testing.T) {
 		io.WriteString(resp, `["a","b","c"]`)
 	})
 
-	names, err := c.AllDBs()
+	names, err := c.AllDBs(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -146,7 +147,7 @@ func TestSecurity(t *testing.T) {
 		io.WriteString(resp, securityObjectJSON)
 	})
 
-	secobj, err := c.DB("db").Security()
+	secobj, err := c.DB("db").Security(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -161,7 +162,7 @@ func TestEmptySecurity(t *testing.T) {
 		resp.WriteHeader(200)
 	})
 
-	secobj, err := c.DB("db").Security()
+	secobj, err := c.DB("db").Security(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -176,7 +177,7 @@ func TestPutSecurity(t *testing.T) {
 		resp.WriteHeader(200)
 	})
 
-	err := c.DB("db").PutSecurity(securityObject)
+	err := c.DB("db").PutSecurity(context.Background(), securityObject)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -198,7 +199,7 @@ func TestGetExistingDoc(t *testing.T) {
 	})
 
 	var doc testDocument
-	if err := c.DB("db").Get("doc", &doc, nil); err != nil {
+	if err := c.DB("db").Get(context.Background(), "doc", &doc, nil); err != nil {
 		t.Fatal(err)
 	}
 	check(t, "doc.Rev", "1-619db7ba8551c0de3f3a178775509611", doc.Rev)
@@ -215,7 +216,7 @@ func TestGetDesignDoc(t *testing.T) {
 	})
 
 	var doc testDocument
-	if err := c.DB("db").Get("_design/doc", &doc, nil); err != nil {
+	if err := c.DB("db").Get(context.Background(), "_design/doc", &doc, nil); err != nil {
 		t.Fatal(err)
 	}
 	check(t, "doc.Rev", "1-619db7ba8551c0de3f3a178775509611", doc.Rev)
@@ -229,7 +230,7 @@ func TestGetNonexistingDoc(t *testing.T) {
 	})
 
 	var doc testDocument
-	err := c.DB("db").Get("doc", doc, nil)
+	err := c.DB("db").Get(context.Background(), "doc", doc, nil)
 	check(t, "couchdb.NotFound(err)", true, couchdb.NotFound(err))
 }
 
@@ -243,13 +244,13 @@ func TestRev(t *testing.T) {
 		NotFound(resp, req)
 	})
 
-	rev, err := db.Rev("ok")
+	rev, err := db.Rev(context.Background(), "ok")
 	if err != nil {
 		t.Fatal(err)
 	}
 	check(t, "rev", "1-619db7ba8551c0de3f3a178775509611", rev)
 
-	errorRev, err := db.Rev("404")
+	errorRev, err := db.Rev(context.Background(), "404")
 	check(t, "errorRev", "", errorRev)
 	check(t, "couchdb.NotFound(err)", true, couchdb.NotFound(err))
 	if _, ok := err.(*couchdb.Error); !ok {
@@ -264,7 +265,7 @@ func TestRevDBSlash(t *testing.T) {
 	})
 
 	db := c.DB("test/db")
-	rev, err := db.Rev("doc/id")
+	rev, err := db.Rev(context.Background(), "doc/id")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -287,7 +288,7 @@ func TestPut(t *testing.T) {
 	})
 
 	doc := &testDocument{Field: 999}
-	rev, err := c.DB("db").Put("doc", doc, "")
+	rev, err := c.DB("db").Put(context.Background(), "doc", doc, "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -314,7 +315,7 @@ func TestPutWithRev(t *testing.T) {
 	})
 
 	doc := &testDocument{Field: 999}
-	rev, err := c.DB("db").Put("doc", doc, "1-619db7ba8551c0de3f3a178775509611")
+	rev, err := c.DB("db").Put(context.Background(), "doc", doc, "1-619db7ba8551c0de3f3a178775509611")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -338,7 +339,7 @@ func TestDelete(t *testing.T) {
 	})
 
 	delrev := "1-619db7ba8551c0de3f3a178775509611"
-	if rev, err := c.DB("db").Delete("doc", delrev); err != nil {
+	if rev, err := c.DB("db").Delete(context.Background(), "doc", delrev); err != nil {
 		t.Fatal(err)
 	} else {
 		check(t, "returned rev", "2-619db7ba8551c0de3f3a178775509611", rev)
@@ -390,7 +391,7 @@ func TestView(t *testing.T) {
 	}
 
 	var result testviewResult
-	err := c.DB("db").View("_design/test", "testview", &result, couchdb.Options{
+	err := c.DB("db").View(context.Background(), "_design/test", "testview", &result, couchdb.Options{
 		"offset": 5,
 		"limit":  100,
 		"reduce": false,
@@ -451,7 +452,7 @@ func TestAllDocs(t *testing.T) {
 	}
 
 	var result alldocsResult
-	err := c.DB("db").AllDocs(&result, couchdb.Options{
+	err := c.DB("db").AllDocs(context.Background(), &result, couchdb.Options{
 		"offset":   5,
 		"limit":    100,
 		"startkey": []string{"Zingylemontart", "Yogurtraita"},

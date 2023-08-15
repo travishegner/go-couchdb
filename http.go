@@ -28,28 +28,28 @@ func (opts Options) clone() (result Options) {
 	return
 }
 
-type transport struct {
+type Transport struct {
 	prefix string // URL prefix
 	http   *http.Client
 	mu     sync.RWMutex
 	auth   Auth
 }
 
-func newTransport(prefix string, rt http.RoundTripper, auth Auth) *transport {
-	return &transport{
+func newTransport(prefix string, rt http.RoundTripper, auth Auth) *Transport {
+	return &Transport{
 		prefix: strings.TrimRight(prefix, "/"),
 		http:   &http.Client{Transport: rt},
 		auth:   auth,
 	}
 }
 
-func (t *transport) setAuth(a Auth) {
+func (t *Transport) setAuth(a Auth) {
 	t.mu.Lock()
 	t.auth = a
 	t.mu.Unlock()
 }
 
-func (t *transport) newRequest(ctx context.Context, method, path string, body io.Reader) (*http.Request, error) {
+func (t *Transport) newRequest(ctx context.Context, method, path string, body io.Reader) (*http.Request, error) {
 	req, err := http.NewRequestWithContext(ctx, method, t.prefix+path, body)
 	if err != nil {
 		return nil, err
@@ -68,7 +68,7 @@ func (t *transport) newRequest(ctx context.Context, method, path string, body io
 // encoded query string.
 //
 // Status codes >= 400 are treated as errors.
-func (t *transport) request(ctx context.Context, method, path string, body io.Reader) (*http.Response, error) {
+func (t *Transport) request(ctx context.Context, method, path string, body io.Reader) (*http.Response, error) {
 	req, err := t.newRequest(ctx, method, path, body)
 	if err != nil {
 		return nil, err
@@ -95,7 +95,7 @@ func (t *transport) request(ctx context.Context, method, path string, body io.Re
 }
 
 // closedRequest sends an HTTP request and discards the response body.
-func (t *transport) closedRequest(ctx context.Context, method, path string, body io.Reader) (*http.Response, error) {
+func (t *Transport) closedRequest(ctx context.Context, method, path string, body io.Reader) (*http.Response, error) {
 
 	resp, err := t.request(ctx, method, path, body)
 	if resp != nil {

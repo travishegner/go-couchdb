@@ -1,6 +1,7 @@
 package couchdb
 
 import (
+	"context"
 	"encoding/base64"
 	"fmt"
 	"io"
@@ -28,7 +29,7 @@ func (db *DB) Attachment(docid, name, rev string) (*Attachment, error) {
 	}
 
 	path := db.path().docID(docid).addRaw(name).rev(rev)
-	resp, err := db.request("GET", path, nil)
+	resp, err := db.request(context.Background(), "GET", path, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -53,7 +54,7 @@ func (db *DB) AttachmentMeta(docid, name, rev string) (*Attachment, error) {
 	}
 
 	path := db.path().docID(docid).addRaw(name).rev(rev)
-	resp, err := db.closedRequest("HEAD", path, nil)
+	resp, err := db.closedRequest(context.Background(), "HEAD", path, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -74,7 +75,7 @@ func (db *DB) PutAttachment(docid string, att *Attachment, rev string) (newrev s
 	}
 
 	path := db.path().docID(docid).addRaw(att.Name).rev(rev)
-	req, err := db.newRequest("PUT", path, att.Body)
+	req, err := db.newRequest(context.Background(), "PUT", path, att.Body)
 	if err != nil {
 		return rev, err
 	}
@@ -102,7 +103,7 @@ func (db *DB) DeleteAttachment(docid, name, rev string) (newrev string, err erro
 	}
 
 	path := db.path().docID(docid).addRaw(name).rev(rev)
-	resp, err := db.closedRequest("DELETE", path, nil)
+	resp, err := db.closedRequest(context.Background(), "DELETE", path, nil)
 	return responseRev(resp, err)
 }
 
