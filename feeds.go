@@ -1,6 +1,7 @@
 package couchdb
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -11,13 +12,13 @@ import (
 // or deleted. On each call to the Next method, the event fields are updated
 // for the current event.
 //
-//     feed, err := client.DbUpdates(nil)
-//     ...
-//     for feed.Next() {
-//	       fmt.Printf("changed: %s %s", feed.Event, feed.Db)
-//     }
-//     err = feed.Err()
-//     ...
+//	    feed, err := client.DbUpdates(nil)
+//	    ...
+//	    for feed.Next() {
+//		       fmt.Printf("changed: %s %s", feed.Event, feed.Db)
+//	    }
+//	    err = feed.Err()
+//	    ...
 type DBUpdatesFeed struct {
 	Event string      `json:"type"`    // "created" | "updated" | "deleted"
 	DB    string      `json:"db_name"` // Event database name
@@ -35,14 +36,14 @@ type DBUpdatesFeed struct {
 // Pleas note that the "feed" option is currently always set to "continuous".
 //
 // http://docs.couchdb.org/en/latest/api/server/common.html#db-updates
-func (c *Client) DBUpdates(options Options) (*DBUpdatesFeed, error) {
+func (c *Client) DBUpdates(ctx context.Context, options Options) (*DBUpdatesFeed, error) {
 	newopts := options.clone()
 	newopts["feed"] = "continuous"
 	path, err := new(pathBuilder).addRaw("_db_updates").options(newopts, nil)
 	if err != nil {
 		return nil, err
 	}
-	resp, err := c.request("GET", path, nil)
+	resp, err := c.request(ctx, "GET", path, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -84,13 +85,13 @@ func (f *DBUpdatesFeed) Close() error {
 // On each call to the Next method, the event fields are updated
 // for the current event. Next is designed to be used in a for loop:
 //
-//     feed, err := client.Changes("db", nil)
-//     ...
-//     for feed.Next() {
-//	       fmt.Printf("changed: %s", feed.ID)
-//     }
-//     err = feed.Err()
-//     ...
+//	    feed, err := client.Changes("db", nil)
+//	    ...
+//	    for feed.Next() {
+//		       fmt.Printf("changed: %s", feed.ID)
+//	    }
+//	    err = feed.Err()
+//	    ...
 type ChangesFeed struct {
 	// DB is the database. Since all events in a _changes feed
 	// belong to the same database, this field is always equivalent to the
@@ -165,19 +166,19 @@ func (f *ChangesFeed) reset() {
 // and then closes the feed. If you want a never-ending feed, set the "feed"
 // option to "continuous":
 //
-//     feed, err := client.Changes("db", couchdb.Options{"feed": "continuous"})
+//	feed, err := client.Changes("db", couchdb.Options{"feed": "continuous"})
 //
 // There are many other options that allow you to customize what the
 // feed returns. For information on all of them, see the official CouchDB
 // documentation:
 //
 // http://docs.couchdb.org/en/latest/api/database/changes.html#db-changes
-func (db *DB) Changes(options Options) (*ChangesFeed, error) {
+func (db *DB) Changes(ctx context.Context, options Options) (*ChangesFeed, error) {
 	path, err := db.path().addRaw("_changes").options(options, nil)
 	if err != nil {
 		return nil, err
 	}
-	resp, err := db.request("GET", path, nil)
+	resp, err := db.request(ctx, "GET", path, nil)
 	if err != nil {
 		return nil, err
 	}

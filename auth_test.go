@@ -1,9 +1,10 @@
 package couchdb_test
 
 import (
-	"github.com/fjl/go-couchdb"
 	"net/http"
 	"testing"
+
+	"github.com/fjl/go-couchdb"
 )
 
 func TestBasicAuth(t *testing.T) {

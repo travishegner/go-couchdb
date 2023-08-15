@@ -3,7 +3,6 @@ package couchdb_test
 import (
 	"errors"
 	"io"
-	"io/ioutil"
 	. "net/http"
 	"net/url"
 	"regexp"
@@ -172,7 +171,7 @@ func TestEmptySecurity(t *testing.T) {
 func TestPutSecurity(t *testing.T) {
 	c := newTestClient(t)
 	c.Handle("PUT /db/_security", func(resp ResponseWriter, req *Request) {
-		body, _ := ioutil.ReadAll(req.Body)
+		body, _ := io.ReadAll(req.Body)
 		check(t, "request body", securityObjectJSON, string(body))
 		resp.WriteHeader(200)
 	})
@@ -275,7 +274,7 @@ func TestRevDBSlash(t *testing.T) {
 func TestPut(t *testing.T) {
 	c := newTestClient(t)
 	c.Handle("PUT /db/doc", func(resp ResponseWriter, req *Request) {
-		body, _ := ioutil.ReadAll(req.Body)
+		body, _ := io.ReadAll(req.Body)
 		check(t, "request body", `{"field":999}`, string(body))
 
 		resp.Header().Set("ETag", `"1-619db7ba8551c0de3f3a178775509611"`)
@@ -302,7 +301,7 @@ func TestPutWithRev(t *testing.T) {
 			"rev=1-619db7ba8551c0de3f3a178775509611",
 			req.URL.RawQuery)
 
-		body, _ := ioutil.ReadAll(req.Body)
+		body, _ := io.ReadAll(req.Body)
 		check(t, "request body", `{"field":999}`, string(body))
 
 		resp.Header().Set("ETag", `"2-619db7ba8551c0de3f3a178775509611"`)

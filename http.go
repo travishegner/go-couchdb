@@ -2,6 +2,7 @@ package couchdb
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -48,15 +49,15 @@ func (t *transport) setAuth(a Auth) {
 	t.mu.Unlock()
 }
 
-func (t *transport) newRequest(method, path string, body io.Reader) (*http.Request, error) {
-	req, err := http.NewRequest(method, t.prefix+path, body)
+func (t *transport) newRequest(ctx context.Context, method, path string, body io.Reader) (*http.Request, error) {
+	req, err := http.NewRequestWithContext(ctx, method, t.prefix+path, body)
 	if err != nil {
 		return nil, err
 	}
 	t.mu.RLock()
 	defer t.mu.RUnlock()
 	if t.auth != nil {
-		t.auth.AddAuth(req)
+		t.auth.AddAuth(ctx, req, t)
 	}
 	return req, nil
 }
@@ -67,8 +68,8 @@ func (t *transport) newRequest(method, path string, body io.Reader) (*http.Reque
 // encoded query string.
 //
 // Status codes >= 400 are treated as errors.
-func (t *transport) request(method, path string, body io.Reader) (*http.Response, error) {
-	req, err := t.newRequest(method, path, body)
+func (t *transport) request(ctx context.Context, method, path string, body io.Reader) (*http.Response, error) {
+	req, err := t.newRequest(ctx, method, path, body)
 	if err != nil {
 		return nil, err
 	}
@@ -78,20 +79,30 @@ func (t *transport) request(method, path string, body io.Reader) (*http.Response
 
 	resp, err := t.http.Do(req)
 	if err != nil {
+		if resp != nil {
+			io.Copy(io.Discard, resp.Body)
+			resp.Body.Close()
+		}
 		return nil, err
 	} else if resp.StatusCode >= 400 {
 		return nil, parseError(req, resp) // the Body is closed by parseError
 	} else {
+		if t.auth != nil {
+			t.auth.UpdateAuth(resp)
+		}
 		return resp, nil
 	}
 }
 
 // closedRequest sends an HTTP request and discards the response body.
-func (t *transport) closedRequest(method, path string, body io.Reader) (*http.Response, error) {
-	resp, err := t.request(method, path, body)
-	if err == nil {
+func (t *transport) closedRequest(ctx context.Context, method, path string, body io.Reader) (*http.Response, error) {
+
+	resp, err := t.request(ctx, method, path, body)
+	if resp != nil {
+		io.Copy(io.Discard, resp.Body)
 		resp.Body.Close()
 	}
+
 	return resp, err
 }
 
@@ -115,7 +126,7 @@ func (p *pathBuilder) path() string {
 
 func (p *pathBuilder) checkNotInQuery() {
 	if p.inQuery {
-		panic("can't add path elements after query string")
+		panic(any("can't add path elements after query string"))
 	}
 }
 
@@ -255,15 +266,15 @@ func responseRev(resp *http.Response, err error) (string, error) {
 }
 
 func readBody(resp *http.Response, v interface{}) error {
-	if err := json.NewDecoder(resp.Body).Decode(v); err != nil {
-		resp.Body.Close()
-		return err
-	}
-	return resp.Body.Close()
+	err := json.NewDecoder(resp.Body).Decode(&v)
+	io.Copy(io.Discard, resp.Body)
+	resp.Body.Close()
+	return err
 }
 
 // Error represents API-level errors, reported by CouchDB as
-//    {"error": <ErrorCode>, "reason": <Reason>}
+//
+//	{"error": <ErrorCode>, "reason": <Reason>}
 type Error struct {
 	Method     string // HTTP method of the request
 	URL        string // HTTP URL of the request
@@ -310,10 +321,13 @@ func ErrorStatus(err error, statusCode int) bool {
 
 func parseError(req *http.Request, resp *http.Response) error {
 	var reply struct{ Error, Reason string }
-	if req.Method != "HEAD" {
+	if req.Method != http.MethodHead {
 		if err := readBody(resp, &reply); err != nil {
 			return fmt.Errorf("couldn't decode CouchDB error: %v", err)
 		}
+	} else {
+		io.Copy(io.Discard, resp.Body)
+		resp.Body.Close()
 	}
 	return &Error{
 		Method:     req.Method,
