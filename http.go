@@ -83,9 +83,9 @@ func (t *Transport) request(ctx context.Context, method, path string, body io.Re
 			io.Copy(io.Discard, resp.Body)
 			resp.Body.Close()
 		}
-		return nil, err
+		return resp, err
 	} else if resp.StatusCode >= 400 {
-		return nil, parseError(req, resp) // the Body is closed by parseError
+		return resp, parseError(req, resp) // the Body is closed by parseError
 	} else {
 		if t.auth != nil {
 			t.auth.UpdateAuth(resp)
