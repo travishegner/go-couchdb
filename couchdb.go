@@ -254,7 +254,11 @@ func (db *DB) Exists(ctx context.Context, id string, opts Options) (bool, error)
 // has to be parsed.
 func (db *DB) Rev(ctx context.Context, id string) (string, error) {
 	path := db.path().docID(id).path()
-	return responseRev(db.closedRequest(ctx, "HEAD", path, nil))
+	resp, err := db.closedRequest(ctx, "HEAD", path, nil)
+	if resp.StatusCode == http.StatusNotFound {
+		return "", nil
+	}
+	return responseRev(resp, err)
 }
 
 // Put stores a document into the given database.
