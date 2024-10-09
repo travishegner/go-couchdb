@@ -255,7 +255,7 @@ func (db *DB) Exists(ctx context.Context, id string, opts Options) (bool, error)
 func (db *DB) Rev(ctx context.Context, id string) (string, error) {
 	path := db.path().docID(id).path()
 	resp, err := db.closedRequest(ctx, "HEAD", path, nil)
-	if resp.StatusCode == http.StatusNotFound {
+	if resp != nil && resp.StatusCode == http.StatusNotFound {
 		return "", nil
 	}
 	return responseRev(resp, err)
